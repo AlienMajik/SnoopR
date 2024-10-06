@@ -1,0 +1,4 @@
+folium
+pandas
+cbor2
+jinja2
