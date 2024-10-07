@@ -165,5 +165,18 @@ Usage
 
 
 
+Disclaimer for SnoopR
+
+SnoopR is provided for educational and informational purposes only. It is intended to help users understand the detection of wireless network devices and potential vulnerabilities in their own networks. The script should only be used on networks or devices that you own or have explicit permission to monitor.
+
+Unauthorized use of this software on networks or devices without proper consent is illegal and violates local, state, and international laws. SnoopR is not intended to be used for any malicious or unethical activities, such as unauthorized network intrusion, eavesdropping, or tracking personal devices without consent.
+
+By using SnoopR, you agree to the following:
+
+    You assume full responsibility for any actions taken with this software.
+    You understand that any misuse of this tool may result in criminal or civil penalties.
+    The creator of SnoopR is not responsible for any misuse, illegal activity, or damages resulting from the use of this software.
+
+Always respect privacy and comply with the law when using SnoopR.
 
 Feel free to fork the repository, make changes, and open pull requests if you want to add features or improve the script!
