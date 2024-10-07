@@ -164,6 +164,36 @@ Usage
         After processing, the script generates an interactive Openstreetmaps HTML map (SnoopR_Map.html) that marks devices and alerts.
 
 
+How to Change the Detection Distance/Radius in SnoopR
+
+The SnoopR script uses the haversine formula to calculate the distance between two GPS coordinates in miles. By default, the script is set to detect devices (snoopers) that move more than 0.05 miles (approximately 80 meters). If you wish to increase or decrease this radius to change the sensitivity of the detection, follow these steps:
+
+  Locate the detect_snoopers Function: In the SnoopR.py script, find the function definition for detect_snoopers. It will look like this:
+
+  
+    def detect_snoopers(device_data, distance_threshold=0.05):  # Distance in miles
+
+
+Change the distance_threshold Parameter:
+
+  To increase the detection radius (detect snoopers over a larger distance), increase the value of the distance_threshold parameter. For example, setting it to 0.1 miles would track devices that have moved approximately 160 meters or more:
+
+
+    def detect_snoopers(device_data, distance_threshold=0.1):  # Increased detection radius
+
+
+To decrease the detection radius (detect snoopers over a shorter distance), lower the distance_threshold value. Setting it to 0.02 miles would detect devices that have moved 32 meters or more:
+
+python
+
+
+    def detect_snoopers(device_data, distance_threshold=0.02):  # Decreased detection radius
+
+
+Save the Script: After modifying the distance_threshold, save the changes to the script.
+
+
+Run SnoopR: Run the script as usual. The snooper detection will now use the new radius for detecting devices.
 
 Disclaimer for SnoopR
 
