@@ -143,7 +143,7 @@ View the Map with:
     xdg-open SnoopR_Map.html
 
 
-After the script finishes processing, an HTML file named SnoopR_Map.html will be created in your working directory. Open this file in any browser to view the interactive map with device and alert data.
+After the script finishes processing, an HTML file named SnoopR_Map.html will be created in your working directory. Open this file in any browser or click on the HTML file to view the interactive map with device and alert data.
 
 
 Usage
@@ -184,8 +184,6 @@ Change the distance_threshold Parameter:
 
 To decrease the detection radius (detect snoopers over a shorter distance), lower the distance_threshold value. Setting it to 0.02 miles would detect devices that have moved 32 meters or more:
 
-python
-
 
     def detect_snoopers(device_data, distance_threshold=0.02):  # Decreased detection radius
 
@@ -193,7 +191,10 @@ python
 Save the Script: After modifying the distance_threshold, save the changes to the script.
 
 
+
 Run SnoopR: Run the script as usual. The snooper detection will now use the new radius for detecting devices.
+
+
 
 Disclaimer for SnoopR
 
