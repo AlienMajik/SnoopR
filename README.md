@@ -1,6 +1,60 @@
                                                                          # SnoopR
 
 
+
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdxxxxxxxdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxxxxxxxkxxxxxxxxxxxxxxxxx
+    xxxxxxkkxxxxxkxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxxxxxxxxkxxxxxxxxxxxxxxxxxx
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxddxddddddddddddddoooollllllloooddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxkxkkxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxddddolcc:;;;,,,,,,,,,,,,,,;;:cloodddddddddddddddddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxxxkkkxxxxxxxxxxxxxxxxxxxxxx
+    xxxxxxxxxxxxxxxxkkkkxkkxxxxxxxxxxxxxxxxxxxxkkkkxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdolc:;;,,,,,,''''''''''''''''''',,,;:lodddddddddddddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxkkxxxxxxxxxxxxxxdxxxxxxxxxx
+    xxxxxxxxxxxxxxxxxkkkkkkkxxxxxxxxxxxxxxxxxxxkkkkkkxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdoc:;;,,,,,,,,,'''''''''...........''''',,;:loddddddddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    xxxxxxxxxxxxxxxxxxxkkkkkkkkkkkkkkxkkkkkxxxxkkkkkkkkxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxoc:;;;,,,,,,,,,,'''''''''................'''',,;:ldddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    xxxxxxxxxxxxxxxxxxxxxxkkkkkkkOkkkkkkkkkkkkxkkkkkkkkxxxxxxxxxxxxxxxxxxxxxxxxxxxdlc:;;;;,,,,,,,,,,,,,,'''''''''''''''''''''''''',,,,;:codddddddddddddddddddddddddddddddxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    xxxkxkxxxxxxxxxxxxxxxxxkkkkkkOOOOkkkkkkkkkkkkkkkkkkkkkxxxxxxxxxxxxxxxxxxxxxxdlc:::::;;;;;;,,,,,,,,,,,''''''''''''''',,,,,,,,,,;;;;;;::coddddddddddddddddddddddxxdxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    kkkkkkkkxxxxxkxxxxxxxxxxxxkkkkkkkkkkkkkkkkkkkkkkkkkkkxxxxxxdddddooooollllllc:::::::::::::;;;;;;;;;;;;;;;;;;;,,,,,,,,,,,,,;;;;;;;;;;;;;;;:cccccllllooooddddddxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    kkkkkkkkkkkkkkxxkxkkxxxxxxkkkkkkkkkkkkkxxxddooooooollccc::::;;;;;;;;;;;;;;,,,,,,,,,,,'''''''''''',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;;:::ccclloooddxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    kkkkkkkkkkkkkkkkkkkxxxkkkkxxxddddoolcc::;;;;;;;;;,,,,,,,,,;;;;;;;;;;;;::::::::::::::::::::::::::ccccccccccccccccccccccc:::::::::c::::c::cccccc:::::::::::::::::::::::;;;;;;;;;::ccclloddxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    kkkkkkkkkkkkkkkkkkxxddollc:::::;;;;;;;;:::::::::::::::::::ccc:ccc::::::::::cccccccccccccccccccccccccllllllllllllcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:::ccclloodxxxxxxxxxxxxxxxxxxxx
+    kkkkkkkkkkkkkxdolcc::::::::::::::::::::::::::::::::::cccccccc:::::::::::::::::::ccccccccccccccccccccllllllllllllccccc::::::::::::::::::::ccccccccccccccccccccccccccccccccccccccccccccccccccccccc::cloodxxxxxxxxxxxxxx
+    kkkkkkkkkkxdollcllllllllllllllllccccccccccccccccccccccccccccccccccccc::::::ccccccccccllllcccccccccclllllllllllllccccc::::::::::::::::cccccccccccccccccllllllllllllllllllllllllllllllllllllllllllllllllloodxxxxxxxxxxx
+    kkkkkkkkxdddooooooooooooooooooooollllllllllllllllllllllllllllllccccccccccccccccccccllllllcccccccccccccccccccccccc:::::;;;;::::::::::::cccccccccllllllllllllllllllllooooooooooooooooooooooooooodddddddddddddxxxxxxxxxx
+    kkkkkkkkkddddddddddddddddoooooooooooooooooooooooooooooooollllllllllccccccccccccccclllooolllllccccccccccc:::::::;;;;;;,,,,,,,,,,;;;;;;;:::::cccclllloooooooooooooooooooooooooodddddddddddddddddddddddddddddxxxxxxxxxxx
+    kkkkkkkkkkxxdddddddddddddddddddddddddooooooooooooooooooooooooooolllccc::::ccccclllloooooooollc:::::ccc::;;;,,,,,'''''''''',,,,,,,,,,,,,,,;;;:::ccllooooooooooooooddddddddddddddddddddddddddddddddddddddxxxxkkkkkkkkkk
+    kkkkkkkkkkkkkkxxxxxdddddddddddddddddddddddddddddddddddooooooooooolc::::::c::::clllllllllcccc:;;,,',,,,,,'''................'''''''''''',,,,,;;;::clooddddddddddddddddddddddddddddddddddddddddxxxxxxxxxxkkkkkkkkkkkkkk
+    kkkkkkkkkkkkkkkkkkkkkxxxxxxdddddddddddddddddddddddddddddddddddddolc::;;;;;;;;;::cccllooodddooolllllcccccc::::::;;;;,,,,,,,,'''''''''',,,,,,,,,;;::coddddddddddddddddddddddddddddddddddxxxxxxxxxxkkkkkkkkkkkkkkkkkkkkk
+    kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkxxxxxxxxddddddddddddddddddddddddddlccccllooodddxxxkkO0KXXXXK0Okkxxddddooollllccccc::::;;;;;;,,,,,,,,,,,,,,,,;;;;;:ccodddddddddddddddddddddddxxxxxxxxxxxxxkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkxxxxxxxxxxddddddollllllooodddxxxkkO00KXXXKK0Okkxxxdddoooollllcccc::::;;;;;;,,,,,,,,,,,,,,,,,;;;;::coddddddxxxxxxxxxxxxxxxxkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkOOkkkkkkkkdlllllooooodddxxxkkOO00000Okkxxddddoooollllllccccc::::;;;;;,,,,,,,,,,,,,,,,,,;;;::coxxxxkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkdoooolc:::;;;;;;;;;;;;,,,,,;;::cclodoollllccc:::;;;;;,,,,,;::::::::::;;;;;;;;::lcllokkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkxxxxdlc::;;,,,,''''',,,''::clokO0KKXXXXXXXXXXXXXK00Oxddoolcccc::;;;;;;::::ccldxxxxxkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkxxxxxdddddoooooodO00KKKKKKKKKKKKKKKKK0Oxdddddddddddddxxxxxkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    OkkkkOOOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkO0KKKXXXXXXXXXXXXXXKKK0Okkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    OOOOOOOOOOOOkkOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkO00KKKKXXXXXXXXXXKKKK00Okkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    OOOOOOOOOOOOOOOOOOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkO000KKKKKKKKKKKKKKKK000Okkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    OOOOOOOOOOOOOOOOOOOOOOOOOkkkOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkOO000KKKKKKKKKKKKKK0000OkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkOOOOOOOOOOOOOOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOkkkkkkkkkkkkkkkkkkkOOOkOOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkOO00000KKKKKKKKKK00000OOkkkkkkkkkkkkkkkkkkkkkkkkkkOkkkOOOOOOOOOOOOOOOOOOOOOOOOOOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkOOkOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkOO00000000KKKK00000000OOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkOOOOOOkOOOkkkkkOkkkOOOOOOOOOOOOOOOOOkOOOOOkOOOkOOOOOOOO                               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOkOOOkOkkkkkkkkkkkkkkkkkkkkkkkkkOO00000000000000000000OOkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkOOOkkkkOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOkkkkkkkkkkOkkkkkkkOkOOkkOOO000000000000000000OOOkkkkkkkkkkkkkkkkkkkkkOkkkkkkOOOOOOOOOOkOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOkOOOOOOOOOOOOOOOO000000000000000000OOOkkkkkOOOkkkkkkOOOOkOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO000000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO00000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO00000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO00000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0OO00000OOOOO
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO00000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO000O00000000000
+    OOOOOO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0000000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0OOOOOO0000000000000000000000
+    OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0000000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0O00000000000000000000000000000000
+    000000000000000000OOOOOOOOOOOOOO0OOOO000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO000000000000000000000OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0OOOOO000000O0000000000000000000000000000000000000000000
+    0000000000000000000000000000000O0000000000OO00OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO0000000000000000000000O0OOOOOOOOOOOOOOOOOOO00OOOOOOO00000OO000000000000000000000000000000000000000000000000000000000000
+    00000000000000000000000000000000000000000000000000000000000000000OO000OOOO000000OOOO0OOOOOOOOO000000000000000000000000OOOOOOOO0OOO000OO000000000000000000000000000000000000000000000000000000000000000000000000000000
+    00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000OO00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000OO00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+ 
+
 SnoopR is a Python-based tool designed for network security professionals and enthusiasts. It detects Wi-Fi and Bluetooth devices captured by Kismet and also utilizes a GPS adapter to track device locations over time (known as "Snoopers"). The tool provides insights into the movement of these devices and maps Wi-Fi attacks logged by Kismet.
 Features:
 
