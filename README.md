@@ -259,12 +259,12 @@ Once Kismet is done capturing traffic close out kismet then run SnoopR to analyz
 Run Snoopr:
 
 
-    python3 SnoopR.py --db-path ./Kismet-YYYYMMDD-HH-MM-SS.kismet --output-map SnoopR_Map.html 
+    python3 SnoopR.py --db-path Kismet-YYYYMMDD-HH-MM-SS.kismet --output-map SnoopR_Map.html 
   
   Or automatically select the latest Kismet file:
 
 
-    python3 SnoopR.py --output-map ./Maps/SnoopR_Map.html
+    python3 SnoopR.py --output-map Maps/SnoopR_Map.html
 
 View the Map with:
     
@@ -297,6 +297,11 @@ How to Change the Detection Distance/Radius in SnoopR
 
 The SnoopR script uses the haversine formula to calculate the distance between two GPS coordinates in miles. By default, the script is set to detect devices (snoopers) that move more than 0.05 miles (approximately 80 meters). If you wish to increase or decrease this radius to change the sensitivity of the detection, follow these steps:
 
+  The easiest way to change the threshold is with this command or you can manually change the script:
+     
+    python3 SnoopR.py --db-path Kismet-YYYYMMDD-HH-MM-SS.kismet --movement-threshold 0.01 --output-map Custom_SnoopR_Map.html
+
+       
   Locate the detect_snoopers Function: In the SnoopR.py script, find the function definition for detect_snoopers. It will look like this:
 
   
@@ -319,7 +324,26 @@ To decrease the detection radius (detect snoopers over a shorter distance), lowe
 
 Save the Script: After modifying the distance_threshold, save the changes to the script.
 
+Recommended Thresholds Based on Scenarios
+A. Small Indoor Spaces (e.g., Offices, Homes)
 
+    Suggested Threshold: 0.01 to 0.03 miles (~53 to 158 feet)
+        Rationale: Allows detection of devices moving within confined spaces without being overly sensitive to minor fluctuations.
+
+B. Medium-Sized Areas (e.g., Retail Stores, Warehouses)
+
+    Suggested Threshold: 0.03 to 0.07 miles (~158 to 369 feet)
+        Rationale: Balances between detecting significant movements and minimizing false positives in moderately sized environments.
+
+C. Large Outdoor Areas (e.g., Campuses, Large Warehouses)
+
+    Suggested Threshold: 0.07 to 0.2 miles (~369 to 1056 feet)
+        Rationale: Accounts for greater distances between detection points and natural movement ranges of devices.
+
+D. High-Security Environments
+
+    Suggested Threshold: 0.005 to 0.02 miles (~26 to 105 feet)
+        Rationale: Enhances sensitivity to detect even minimal movements indicative of unauthorized access.
 
 Run SnoopR: Run the script as usual. The snooper detection will now use the new radius for detecting devices.
 
