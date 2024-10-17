@@ -3,8 +3,8 @@
 SnoopR.py
 
 A script to extract device information from a Kismet SQLite database,
-detect snoopers based on movement, process alerts, and visualize the data
-on an interactive Folium map.
+detect snoopers based on movement and drone identification, process alerts,
+and visualize the data on an interactive Folium map.
 
 Enhancements:
 - Increased movement threshold to reduce false positives.
@@ -12,6 +12,7 @@ Enhancements:
 - Aggregated movement analysis.
 - Eliminated duplicate snooper entries.
 - Enhanced data validation and cleaning.
+- Added drone detection based on known SSIDs and MAC address prefixes.
 - Added detailed logging for better troubleshooting.
 
 Usage:
@@ -53,6 +54,16 @@ TIME_THRESHOLD = 3600  # 1 hour
 # Logging configuration
 LOG_FILE = "snoopr.log"
 LOG_LEVEL = logging.DEBUG  # Set to DEBUG for detailed logs
+
+# List of known drone SSIDs or MAC address prefixes (OUIs)
+known_drone_ssids = [
+    "DJI-Mavic", "DJI-Avata", "DJI-Thermal", "DJI", "Brinc-Lemur", "Autel-Evo", "DJI-Matrice"
+]
+
+# Known Drone MAC Address Prefixes (OUIs)
+known_drone_mac_prefixes = [
+    "60:60:1f", "90:3a:e6", "ac:7b:a1", "dc:a6:32", "00:1e:c0", "18:18:9f", "68:ad:2f"
+]
 
 # ===========================
 # Helper Functions
@@ -125,6 +136,26 @@ def find_most_recent_kismet_file(directory='.'):
     logging.info(f"Most recent Kismet file found: {latest_file}")
     return latest_file
 
+def is_drone(device_name, device_mac):
+    """
+    Determine if a device is a drone based on its SSID or MAC address prefix.
+    Parameters:
+        device_name (str): The SSID or name of the device.
+        device_mac (str): The MAC address of the device.
+    Returns:
+        bool: True if the device is identified as a drone, False otherwise.
+    """
+    # Check if device name matches any known drone SSIDs
+    if any(drone_ssid.lower() in device_name.lower() for drone_ssid in known_drone_ssids):
+        logging.debug(f"Device {device_mac} identified as drone based on SSID.")
+        return True
+    # Check if MAC address starts with any known drone MAC prefixes
+    mac_prefix = device_mac[:8].lower()  # First 3 octets
+    if any(mac_prefix.startswith(prefix.lower()) for prefix in known_drone_mac_prefixes):
+        logging.debug(f"Device {device_mac} identified as drone based on MAC prefix.")
+        return True
+    return False
+
 # ===========================
 # Data Extraction Functions
 # ===========================
@@ -146,7 +177,7 @@ def extract_data_from_kismet(kismet_file):
     
     cursor = conn.cursor()
 
-    # Query for device MAC addresses, GPS data, and device BLOB from the devices table
+    # Query for device MAC addresses, GPS data, device BLOB, and last_time from the devices table
     query = """
     SELECT devices.devmac, devices.min_lat, devices.min_lon, devices.device, devices.last_time
     FROM devices
@@ -208,6 +239,9 @@ def extract_data_from_kismet(kismet_file):
             logging.error(f"Error parsing device blob for {mac}: {e}")
             continue  # Skip to the next device
 
+        # Determine if the device is a drone
+        drone_detected = is_drone(ssid_or_name, mac.lower() if mac else 'unknown')
+
         device_list.append({
             'mac': sanitize_string(mac).lower() if mac else 'unknown',
             'lat': lat,
@@ -215,9 +249,10 @@ def extract_data_from_kismet(kismet_file):
             'name': ssid_or_name,
             'type': encryption_or_type,
             'dev_type': dev_type,
-            'last_time': last_time
+            'last_time': last_time,
+            'drone_detected': drone_detected
         })
-        logging.debug(f"Device added: {mac}, Type: {dev_type}, Location: ({lat}, {lon})")
+        logging.debug(f"Device added: {mac}, Type: {dev_type}, Location: ({lat}, {lon}), Drone Detected: {drone_detected}")
 
     logging.info(f"Extracted {len(device_list)} devices from the database.")
     return device_list
@@ -386,7 +421,7 @@ def visualize_devices_snoopers_and_alerts(device_data, snoopers, alerts, output_
     else:
         logging.warning("No valid coordinates to center the map. Using default location.")
         center_lat, center_lon = 0.0, 0.0  # Default to Equator
-    
+
     # Create the map
     device_map = folium.Map(location=(center_lat, center_lon), zoom_start=15, tiles="OpenStreetMap")
     logging.info(f"Map centered at latitude {center_lat}, longitude {center_lon}.")
@@ -399,6 +434,7 @@ def visualize_devices_snoopers_and_alerts(device_data, snoopers, alerts, output_
         name = device['name']
         dev_type = device['dev_type']
         type_info = device['type']
+        drone_detected = device.get('drone_detected', False)
         popup_info = (
             f"MAC: {mac}<br>"
             f"Name/SSID: {name}<br>"
@@ -407,12 +443,21 @@ def visualize_devices_snoopers_and_alerts(device_data, snoopers, alerts, output_
             f"Location: ({lat}, {lon})"
         )
 
+        # Choose icon color based on drone detection
+        if drone_detected:
+            icon_color = 'green'
+            icon_icon = 'fighter-jet'  # Using a plane icon to represent drones
+            popup_info += "<br><b>Drone Detected!</b>"
+        else:
+            icon_color = 'blue'
+            icon_icon = 'signal'  # Default icon
+
         folium.Marker(
             location=(lat, lon),
             popup=folium.Popup(popup_info, parse_html=False, max_width=300),
-            icon=folium.Icon(color='blue', icon='signal', prefix='fa')
+            icon=folium.Icon(color=icon_color, icon=icon_icon, prefix='fa')
         ).add_to(device_map)
-        logging.debug(f"Device marker added for {mac} at ({lat}, {lon}).")
+        logging.debug(f"Device marker added for {mac} at ({lat}, {lon}). Drone: {drone_detected}")
 
     # Highlight detected snoopers differently
     for snooper in snoopers:
@@ -424,6 +469,7 @@ def visualize_devices_snoopers_and_alerts(device_data, snoopers, alerts, output_
         name = snooper['name']
         dev_type = snooper['dev_type']
         type_info = snooper['type']
+        drone_detected = snooper.get('drone_detected', False)
         popup_info = (
             f"<b>Snooper Detected!</b><br>"
             f"MAC: {mac}<br>"
@@ -433,12 +479,21 @@ def visualize_devices_snoopers_and_alerts(device_data, snoopers, alerts, output_
             f"Location: ({lat}, {lon})"
         )
 
+        # Choose icon color based on drone detection
+        if drone_detected:
+            icon_color = 'darkgreen'
+            icon_icon = 'fighter-jet'
+            popup_info += "<br><b>Drone Snooper!</b>"
+        else:
+            icon_color = 'red'
+            icon_icon = 'exclamation-triangle'
+
         folium.Marker(
             location=(lat, lon),
             popup=folium.Popup(popup_info, parse_html=False, max_width=300),
-            icon=folium.Icon(color='red', icon='exclamation-triangle', prefix='fa')
+            icon=folium.Icon(color=icon_color, icon=icon_icon, prefix='fa')
         ).add_to(device_map)
-        logging.debug(f"Snooper marker added for {mac} at ({lat}, {lon}).")
+        logging.debug(f"Snooper marker added for {mac} at ({lat}, {lon}). Drone: {drone_detected}")
 
     # Add alerts to the map
     for alert in alerts:
@@ -543,7 +598,11 @@ def main():
     if snoopers:
         logging.info(f"Detected {len(snoopers)} snoopers:")
         for snooper in snoopers:
-            logging.info(f"Snooper MAC: {snooper['mac']}, Location: ({snooper['lat']}, {snooper['lon']}), Last Seen Time: {datetime.datetime.fromtimestamp(snooper['last_time']).strftime('%Y-%m-%d %H:%M:%S')}")
+            try:
+                last_seen_time = datetime.datetime.fromtimestamp(snooper['last_time']).strftime('%Y-%m-%d %H:%M:%S')
+            except (OSError, OverflowError, ValueError):
+                last_seen_time = 'Invalid Timestamp'
+            logging.info(f"Snooper MAC: {snooper['mac']}, Location: ({snooper['lat']}, {snooper['lon']}), Last Seen Time: {last_seen_time}, Drone Detected: {snooper['drone_detected']}")
     else:
         logging.info("No snoopers detected.")
 
@@ -569,3 +628,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
