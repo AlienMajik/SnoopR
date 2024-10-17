@@ -6,14 +6,13 @@ A script to extract device information from a Kismet SQLite database,
 detect snoopers based on movement, process alerts, and visualize the data
 on an interactive Folium map.
 
-This version includes updates to:
-- Include planes (ADS-B devices) in the mapping.
-- Correctly extract alerts and parse location data from the JSON field.
-- Adjust the map center to the first valid device or alert location.
-- Map alerts even if they have no latitude and longitude, placing them next to the first mapped device seen before the alert's timestamp.
-- **Extract and display the alert type in the map popups.**
-- Improve device data extraction and error handling.
-- Simplify the visualization logic.
+Enhancements:
+- Increased movement threshold to reduce false positives.
+- Implemented time-based filtering for movement detection.
+- Aggregated movement analysis.
+- Eliminated duplicate snooper entries.
+- Enhanced data validation and cleaning.
+- Added detailed logging for better troubleshooting.
 
 Usage:
     python3 SnoopR.py --db-path ./Kismet-YYYYMMDD-HH-MM-SS.kismet --output-map SnoopR_Map.html
@@ -32,92 +31,55 @@ Requirements:
 
 import sqlite3
 import folium
-import json
+import json  # For parsing JSON data from the BLOB
 import os
 import glob
 import datetime
 from math import radians, cos, sin, asin, sqrt
 from collections import defaultdict
-import logging
 import argparse
-from folium.plugins import MarkerCluster
+import logging
 
 # ===========================
-# Configuration and Mapping
+# Configuration and Constants
 # ===========================
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,  # Change to DEBUG for more detailed logs
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("snoopr.log"),
-        logging.StreamHandler()
-    ]
-)
+# Distance threshold in miles to detect movement
+DISTANCE_THRESHOLD = 0.5  # Increased from 0.05 to 0.5 miles
 
-# List of known drone SSIDs or MAC address prefixes (OUIs)
-known_drone_ssids = [
-    "DJI-Mavic", "DJI-Avata", "DJI-Thermal", "DJI", "Brinc-Lemur", "Autel-Evo", "DJI-Matrice"
-]
+# Time threshold in seconds to consider movement
+TIME_THRESHOLD = 3600  # 1 hour
 
-# Known Drone MAC Address Prefixes (OUIs)
-known_drone_mac_prefixes = [
-    "60:60:1f", "90:3a:e6", "ac:7b:a1", "dc:a6:32", "00:1e:c0", "18:18:9f", "68:ad:2f"
-]
-
-# Mapping of device types to Folium icons and colors (all keys are lowercase)
-DEVICE_TYPE_MAPPING = {
-    'wi-fi ap': {'icon': 'wifi', 'color': 'blue', 'popup': 'Wi-Fi Access Point'},
-    'wi-fi client': {'icon': 'user', 'color': 'lightblue', 'popup': 'Wi-Fi Client'},
-    'btle': {'icon': 'bluetooth', 'color': 'green', 'popup': 'Bluetooth LE Device'},
-    'br/edr': {'icon': 'bluetooth', 'color': 'darkgreen', 'popup': 'Bluetooth Classic Device'},
-    'wi-fi bridged': {'icon': 'exchange-alt', 'color': 'orange', 'popup': 'Wi-Fi Bridged Device'},
-    'wi-fi wds ap': {'icon': 'wifi', 'color': 'cadetblue', 'popup': 'Wi-Fi WDS Access Point'},
-    'wi-fi ad-hoc': {'icon': 'users', 'color': 'purple', 'popup': 'Wi-Fi Ad-Hoc Network'},
-    'wi-fi wds': {'icon': 'wifi', 'color': 'lightblue', 'popup': 'Wi-Fi WDS Device'},
-    'wi-fi device': {'icon': 'wifi', 'color': 'gray', 'popup': 'Wi-Fi Device'},
-    'tpms': {'icon': 'car', 'color': 'purple', 'popup': 'Tire Pressure Monitoring System'},
-    'airplane': {'icon': 'plane', 'color': 'blue', 'popup': 'Airplane'},
-    'ads-b': {'icon': 'plane', 'color': 'blue', 'popup': 'ADS-B Device'},
-    'unknown': {'icon': 'question-circle', 'color': 'darkgray', 'popup': 'Unknown Device'}
-}
+# Logging configuration
+LOG_FILE = "snoopr.log"
+LOG_LEVEL = logging.DEBUG  # Set to DEBUG for detailed logs
 
 # ===========================
 # Helper Functions
 # ===========================
 
-def parse_arguments():
+def setup_logging():
     """
-    Parse command-line arguments.
-
-    Returns:
-        args: Parsed arguments.
+    Configure logging settings.
     """
-    parser = argparse.ArgumentParser(description="Visualize Kismet Devices on a Folium Map")
-    parser.add_argument(
-        '--db-path',
-        type=str,
-        help='Path to the Kismet SQLite database file (e.g., ./Kismet-YYYYMMDD-HH-MM-SS.kismet). If omitted, the script will attempt to find the most recent .kismet file in the current directory.'
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(LOG_FILE),
+            logging.StreamHandler()
+        ]
     )
-    parser.add_argument(
-        '--output-map',
-        type=str,
-        default="SnoopR_Map.html",
-        help='Filename for the output HTML map (default: SnoopR_Map.html)'
-    )
-    parser.add_argument(
-        '--movement-threshold',
-        type=float,
-        default=0.05,
-        help='Threshold distance in miles to detect device movement (default: 0.05 miles)'
-    )
-    return parser.parse_args()
+    logging.info("Logging initialized.")
 
 def haversine(lon1, lat1, lon2, lat2):
     """
-    Calculate the great circle distance between two points on the Earth (specified in decimal degrees).
-    Returns distance in miles.
+    Calculate the great-circle distance between two points on the Earth.
+    Parameters:
+        lon1, lat1: Longitude and latitude of point 1 in decimal degrees.
+        lon2, lat2: Longitude and latitude of point 2 in decimal degrees.
+    Returns:
+        Distance in miles.
     """
     # Convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
@@ -131,11 +93,9 @@ def haversine(lon1, lat1, lon2, lat2):
 
 def sanitize_string(s):
     """
-    Sanitize strings to prevent Jinja2 parsing errors.
-
+    Sanitize strings to prevent issues in HTML rendering.
     Parameters:
         s (str): The string to sanitize.
-
     Returns:
         str: Sanitized string.
     """
@@ -149,529 +109,403 @@ def sanitize_string(s):
     except (AttributeError, ValueError):
         return 'Unknown'
 
-def is_drone(ssid, mac_address):
+def find_most_recent_kismet_file(directory='.'):
     """
-    Detect if a device is a known drone by checking SSID or MAC address prefix.
-
+    Find the most recently modified .kismet file in the specified directory.
     Parameters:
-        ssid (str): SSID or name of the device.
-        mac_address (str): MAC address of the device.
-
+        directory (str): Directory path to search for .kismet files.
     Returns:
-        bool: True if device is a known drone, False otherwise.
+        str or None: Path to the most recent .kismet file or None if none found.
     """
-    if ssid and any(drone_ssid in ssid for drone_ssid in known_drone_ssids):
-        return True
-    mac_prefix = mac_address[:8].lower()  # First 3 octets
-    if any(drone_mac_prefix in mac_prefix for drone_mac_prefix in known_drone_mac_prefixes):
-        return True
-    return False
-
-def is_valid_lat_lon(lat, lon):
-    """
-    Validate latitude and longitude values.
-
-    Parameters:
-        lat (float): Latitude value.
-        lon (float): Longitude value.
-
-    Returns:
-        bool: True if valid, False otherwise.
-    """
-    try:
-        lat = float(lat)
-        lon = float(lon)
-        return (
-            -90 <= lat <= 90 and
-            -180 <= lon <= 180 and
-            not (lat == 0.0 and lon == 0.0)
-        )
-    except (ValueError, TypeError):
-        return False
+    kismet_files = glob.glob(os.path.join(directory, '*.kismet'))
+    if not kismet_files:
+        logging.error("No .kismet files found in the directory.")
+        return None
+    latest_file = max(kismet_files, key=os.path.getmtime)
+    logging.info(f"Most recent Kismet file found: {latest_file}")
+    return latest_file
 
 # ===========================
 # Data Extraction Functions
 # ===========================
 
-def extract_device_detections(kismet_file):
+def extract_data_from_kismet(kismet_file):
     """
-    Extract device detections from the Kismet SQLite database.
-
+    Extract device and GPS data from the Kismet SQLite database.
     Parameters:
         kismet_file (str): Path to the Kismet SQLite database file.
-
     Returns:
-        dict: Dictionary with MAC addresses as keys and lists of detection dictionaries as values.
+        List[dict]: List of device dictionaries.
     """
-    conn = sqlite3.connect(kismet_file)
+    logging.info(f"Connecting to Kismet database: {kismet_file}")
+    try:
+        conn = sqlite3.connect(kismet_file)
+    except sqlite3.Error as e:
+        logging.error(f"Failed to connect to the database: {e}")
+        return []
+    
     cursor = conn.cursor()
 
-    # Fetch all device detections with timestamps and location data
+    # Query for device MAC addresses, GPS data, and device BLOB from the devices table
     query = """
-    SELECT devmac, type, device, min_lat, min_lon, last_time
+    SELECT devices.devmac, devices.min_lat, devices.min_lon, devices.device, devices.last_time
     FROM devices
-    WHERE min_lat IS NOT NULL AND min_lon IS NOT NULL
-    ORDER BY last_time ASC;
+    WHERE devices.min_lat IS NOT NULL AND devices.min_lon IS NOT NULL;
     """
     try:
         cursor.execute(query)
         devices = cursor.fetchall()
+        logging.info(f"Fetched {len(devices)} device records from the database.")
     except sqlite3.Error as e:
         logging.error(f"SQLite error while fetching devices: {e}")
         conn.close()
-        return {}
-
+        return []
+    
     conn.close()
 
-    device_detections = defaultdict(list)
-    device_types = set()
-    device_type_counts = defaultdict(int)
+    device_list = []
 
-    for device in devices:
-        devmac, dev_type, device_blob, min_lat, min_lon, last_time = device
+    for row in devices:
+        mac = row[0]
+        lat = row[1] if row[1] is not None else 0.0
+        lon = row[2] if row[2] is not None else 0.0
+        device_blob = row[3]
+        last_time = row[4] if row[4] is not None else 0
 
-        # Handle decoding the device blob
-        if device_blob:
-            try:
-                if isinstance(device_blob, bytes):
-                    device_dict = json.loads(device_blob.decode('utf-8', errors='ignore'))
-                elif isinstance(device_blob, str):
-                    device_dict = json.loads(device_blob)
-                else:
-                    device_dict = {}
-            except (json.JSONDecodeError, AttributeError, TypeError, ValueError) as e:
-                logging.error(f"Error parsing JSON for device {devmac}: {e}")
-                device_dict = {}
-        else:
-            device_dict = {}
+        ssid_or_name = 'Unknown'
+        encryption_or_type = 'Unknown'
+        dev_type = 'Unknown'
 
-        device_type = sanitize_string(dev_type).lower() if dev_type else 'unknown'
-
-        # Include ADS-B devices to map planes
-        # No longer excluding 'airplane' or 'ads-b' device types
-
-        # Convert timestamp
         try:
-            last_seen_time = datetime.datetime.fromtimestamp(last_time).strftime('%Y-%m-%d %H:%M:%S') if last_time else 'Unknown'
-        except (OSError, OverflowError, ValueError) as e:
-            logging.error(f"Invalid timestamp {last_time} for device {devmac}: {e}")
-            last_seen_time = 'Invalid Timestamp'
+            # Parse the JSON data
+            device_dict = json.loads(device_blob.decode('utf-8'))
+            
+            # Extract device type
+            dev_type = sanitize_string(device_dict.get('kismet.device.base.type', 'Unknown'))
+            
+            # Extract device name
+            ssid_or_name = sanitize_string(device_dict.get('kismet.device.base.name', 'Unknown'))
+            
+            # Extract encryption or type information
+            if dev_type in ['Wi-Fi AP', 'Wi-Fi Client', 'Wi-Fi Base Station', 'Wi-Fi Client Device']:
+                encryption_data = device_dict.get('kismet.device.base.crypt')
+                if not encryption_data:
+                    # Try alternative keys for encryption
+                    encryption_data = device_dict.get('dot11.device', {}).get('dot11.device.last_beaconed_ssid', {}).get('dot11.ssid.cryptset')
+                if isinstance(encryption_data, list):
+                    encryption_or_type = ', '.join(encryption_data)
+                elif isinstance(encryption_data, str):
+                    encryption_or_type = encryption_data
+                else:
+                    encryption_or_type = 'Unknown'
+            elif dev_type in ['Bluetooth', 'Bluetooth LE', 'Bluetooth Low Energy Device']:
+                bt_class = sanitize_string(device_dict.get('kismet.device.base.bluetooth.device_class', 'Unknown'))
+                encryption_or_type = bt_class
+            else:
+                encryption_or_type = 'Unknown'
 
-        mac = sanitize_string(devmac).lower() if devmac else 'unknown'
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
+            logging.error(f"Error parsing device blob for {mac}: {e}")
+            continue  # Skip to the next device
 
-        lat_valid = is_valid_lat_lon(min_lat, min_lon)
-        lon_valid = is_valid_lat_lon(min_lat, min_lon)
+        device_list.append({
+            'mac': sanitize_string(mac).lower() if mac else 'unknown',
+            'lat': lat,
+            'lon': lon,
+            'name': ssid_or_name,
+            'type': encryption_or_type,
+            'dev_type': dev_type,
+            'last_time': last_time
+        })
+        logging.debug(f"Device added: {mac}, Type: {dev_type}, Location: ({lat}, {lon})")
 
-        # Skip devices with invalid coordinates
-        if not lat_valid or not lon_valid:
-            logging.debug(f"Skipping device {mac} due to invalid coordinates.")
-            continue
-
-        detection = {
-            'mac': mac,
-            'device_type': device_type,
-            'name': sanitize_string(device_dict.get('kismet.device.base.commonname', 'Unknown')),
-            'encryption': sanitize_string(device_dict.get('kismet.device.base.crypt', 'Unknown')),
-            'lat': float(min_lat),
-            'lon': float(min_lon),
-            'last_seen_time': last_seen_time,
-            'last_time': last_time if last_time else None,
-            'drone_detected': is_drone(
-                sanitize_string(device_dict.get('kismet.device.base.commonname', 'Unknown')),
-                mac
-            )
-        }
-
-        device_detections[mac].append(detection)
-        device_types.add(device_type)
-        device_type_counts[device_type] += 1
-
-    logging.info(f"Extracted detections for {len(device_detections)} devices from the database.")
-    logging.info(f"Device Types Found: {device_types}")
-    logging.info(f"Device Type Counts: {dict(device_type_counts)}")
-    return device_detections
-
-def detect_snoopers(device_detections, movement_threshold=0.05):
-    """
-    Detect potential snoopers based on device movement.
-
-    Parameters:
-        device_detections (dict): Dictionary with MAC addresses as keys and lists of detection dictionaries as values.
-        movement_threshold (float): Distance in miles to consider a device as a snooper.
-
-    Returns:
-        List[dict]: List of snooper device dictionaries.
-    """
-    snoopers = []
-
-    for mac, detections in device_detections.items():
-        if len(detections) < 2:
-            continue  # Need at least two detections to calculate movement
-
-        detections = sorted(detections, key=lambda x: x['last_time'] or 0)
-        total_distance = 0
-        for i in range(1, len(detections)):
-            lat1, lon1 = detections[i-1]['lat'], detections[i-1]['lon']
-            lat2, lon2 = detections[i]['lat'], detections[i]['lon']
-            if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
-                continue  # Skip if coordinates are invalid
-            distance = haversine(lon1, lat1, lon2, lat2)
-            total_distance += distance
-            if distance >= movement_threshold:
-                snooper = {
-                    'mac': mac,
-                    'detections': detections,
-                    'total_distance': total_distance
-                }
-                snoopers.append(snooper)
-                logging.info(f"Snooper detected: {mac}, moved {distance:.2f} miles.")
-                break  # Stop after detecting movement beyond threshold
-
-    logging.info(f"Detected {len(snoopers)} snoopers based on movement threshold {movement_threshold} miles.")
-    return snoopers
+    logging.info(f"Extracted {len(device_list)} devices from the database.")
+    return device_list
 
 def extract_alerts_from_kismet(kismet_file):
     """
     Extract alerts from the Kismet SQLite database.
-
     Parameters:
         kismet_file (str): Path to the Kismet SQLite database file.
-
     Returns:
         List[dict]: List of alert dictionaries.
     """
-    conn = sqlite3.connect(kismet_file)
+    logging.info(f"Connecting to Kismet database for alerts: {kismet_file}")
+    try:
+        conn = sqlite3.connect(kismet_file)
+    except sqlite3.Error as e:
+        logging.error(f"Failed to connect to the database for alerts: {e}")
+        return []
+    
     cursor = conn.cursor()
 
-    # Adjusted query to select only existing columns
+    # Query to select relevant alert data
     query = """
-    SELECT devmac, json, ts_sec
-    FROM alerts;
+    SELECT ts_sec, ts_usec, phyname, devmac, lat, lon, header, json
+    FROM alerts
+    WHERE lat IS NOT NULL AND lon IS NOT NULL;
     """
     try:
         cursor.execute(query)
         alerts = cursor.fetchall()
+        logging.info(f"Fetched {len(alerts)} alert records from the database.")
     except sqlite3.Error as e:
         logging.error(f"SQLite error while fetching alerts: {e}")
         conn.close()
         return []
-
+    
     conn.close()
 
     alert_list = []
 
-    for alert in alerts:
-        devmac, alert_blob, ts_sec = alert
+    for row in alerts:
+        ts_sec = row[0]
+        ts_usec = row[1]
+        phyname = row[2]
+        devmac = row[3]
+        lat = row[4]
+        lon = row[5]
+        header = row[6]
+        json_blob = row[7]
+
+        # Combine ts_sec and ts_usec to get the full timestamp
+        timestamp = ts_sec + ts_usec / 1_000_000
+
+        # Convert timestamp to readable format
         try:
-            alert_time = datetime.datetime.fromtimestamp(ts_sec) if ts_sec else None
-            alert_time_str = alert_time.strftime('%Y-%m-%d %H:%M:%S') if alert_time else 'Unknown'
+            alert_time = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S.%f')
         except (OSError, OverflowError, ValueError):
-            alert_time_str = f"{ts_sec}"
-            alert_time = None
+            alert_time = 'Invalid Timestamp'
 
-        # Parse the JSON blob to extract message, alert type, and location
-        message = 'No message'
-        alert_type = 'Unknown'
-        lat = None
-        lon = None
+        # Parse the JSON blob for additional details if needed
+        try:
+            json_data = json.loads(json_blob.decode('utf-8'))
+            alert_text = sanitize_string(json_data.get('kismet.alert.description', 'No description'))
+            alert_key = sanitize_string(json_data.get('kismet.alert.name', header or 'Unknown alert'))
+        except (json.JSONDecodeError, AttributeError, TypeError, ValueError) as e:
+            logging.error(f"Error parsing alert JSON for alert at {alert_time}: {e}")
+            alert_text = 'No description'
+            alert_key = sanitize_string(header) if header else 'Unknown alert'
 
-        if alert_blob:
-            try:
-                if isinstance(alert_blob, bytes):
-                    alert_dict = json.loads(alert_blob.decode('utf-8', errors='ignore'))
-                elif isinstance(alert_blob, str):
-                    alert_dict = json.loads(alert_blob)
-                else:
-                    alert_dict = {}
-                
-                # Updated extraction keys based on debug logs
-                message = alert_dict.get('kismet.alert.text', 'No message')
-                alert_type = alert_dict.get('kismet.alert.class', 'Unknown')
-
-                # Updated location extraction
-                location = alert_dict.get('kismet.common.location', {})
-                geopoint = location.get('kismet.common.location.geopoint')
-                
-                if geopoint and isinstance(geopoint, list) and len(geopoint) == 2:
-                    lon, lat = geopoint  # Kismet uses [longitude, latitude]
-                else:
-                    lat = location.get('kismet.common.location.lat')
-                    lon = location.get('kismet.common.location.lon')
-                
-                # Convert to float if possible
-                lat = float(lat) if lat else None
-                lon = float(lon) if lon else None
-
-            except (json.JSONDecodeError, AttributeError, TypeError, ValueError) as e:
-                logging.error(f"Error parsing JSON for alert from {devmac}: {e}")
-                continue  # Skip alerts with invalid JSON
-
-        # Create the alert entry
-        alert_entry = {
-            'mac': sanitize_string(devmac).lower() if devmac else 'unknown',
-            'message': sanitize_string(message),
-            'alert_type': sanitize_string(alert_type),
+        alert_list.append({
+            'timestamp': alert_time,
+            'alert_key': alert_key,
+            'alert_text': alert_text,
+            'device_mac': sanitize_string(devmac).lower() if devmac else 'unknown',
             'lat': lat,
-            'lon': lon,
-            'time': alert_time,
-            'time_str': alert_time_str
-        }
-
-        alert_list.append(alert_entry)
+            'lon': lon
+        })
+        logging.debug(f"Alert added: {alert_key}, Device MAC: {devmac}, Location: ({lat}, {lon})")
 
     logging.info(f"Extracted {len(alert_list)} alerts from the database.")
     return alert_list
 
 # ===========================
+# Snoopers Detection Function
+# ===========================
+
+def detect_snoopers(device_data, distance_threshold=DISTANCE_THRESHOLD, time_threshold=TIME_THRESHOLD):
+    """
+    Detect potential snoopers based on device movement over a specified distance and time.
+    Parameters:
+        device_data (List[dict]): List of device detection dictionaries.
+        distance_threshold (float): Distance in miles to consider a device as a snooper.
+        time_threshold (int): Time in seconds to consider movement.
+    Returns:
+        List[dict]: List of snooper device dictionaries.
+    """
+    snoopers = []
+    identified_snoopers = set()
+    device_locations = defaultdict(list)
+
+    # Group devices by MAC address with timestamps
+    for device in device_data:
+        mac = device['mac']
+        lat = device['lat']
+        lon = device['lon']
+        last_time = device.get('last_time', 0)
+        device_locations[mac].append((lat, lon, last_time))
+
+    # Detect devices by checking movement within time threshold
+    for mac, locations in device_locations.items():
+        if len(locations) > 1 and mac not in identified_snoopers:
+            # Sort locations by timestamp
+            sorted_locations = sorted(locations, key=lambda x: x[2] or 0)
+            first_location = sorted_locations[0]
+            for other_location in sorted_locations[1:]:
+                time_diff = other_location[2] - first_location[2]
+                if time_diff <= time_threshold:
+                    distance_moved = haversine(first_location[1], first_location[0], other_location[1], other_location[0])
+                    logging.debug(f"Device {mac}: Moved {distance_moved:.2f} miles in {time_diff} seconds.")
+                    if distance_moved > distance_threshold:
+                        # Retrieve the latest detection
+                        latest_detection = max(
+                            [d for d in device_data if d['mac'] == mac],
+                            key=lambda x: x['last_time'] or 0
+                        )
+                        snoopers.append(latest_detection)
+                        identified_snoopers.add(mac)
+                        logging.info(f"Snooper detected: {mac}, moved {distance_moved:.2f} miles in {time_diff} seconds.")
+                        break  # Stop after first detection beyond threshold
+
+    logging.info(f"Total snoopers detected: {len(snoopers)} based on movement threshold {distance_threshold} miles and time threshold {time_threshold} seconds.")
+    return snoopers
+
+# ===========================
 # Visualization Function
 # ===========================
 
-def visualize_devices_snoopers_and_alerts(device_detections, snoopers, alerts, output_map_file="SnoopR_Map.html"):
+def visualize_devices_snoopers_and_alerts(device_data, snoopers, alerts, output_map_file="SnoopR_Map.html"):
     """
     Visualizes devices, snoopers, and alerts on a Folium map.
-
     Parameters:
-    - device_detections (dict): Dictionary of device detections.
-    - snoopers (List[dict]): List of snooper device dictionaries.
-    - alerts (List[dict]): List of alert dictionaries.
-    - output_map_file (str): Filename for the output HTML map.
+        device_data (List[dict]): List of device dictionaries.
+        snoopers (List[dict]): List of snooper device dictionaries.
+        alerts (List[dict]): List of alert dictionaries.
+        output_map_file (str): Filename for the output HTML map.
     """
-    if not device_detections and not snoopers and not alerts:
-        logging.info("No devices, snoopers, or alerts to display.")
+    if not device_data and not snoopers and not alerts:
+        logging.warning("No devices, snoopers, or alerts to display.")
         return
-
-    # Flatten device detections for mapping
-    device_data = []
-    for detections in device_detections.values():
-        device_data.extend(detections)
 
     # Filter out devices with invalid coordinates
-    device_data = [
-        d for d in device_data
-        if is_valid_lat_lon(d['lat'], d['lon'])
-    ]
-    # Sort devices by last_time for chronological order
-    device_data = sorted(device_data, key=lambda x: x['last_time'] or 0)
+    device_data = [d for d in device_data if d['lat'] != 0.0 and d['lon'] != 0.0]
+    alerts = [a for a in alerts if a['lat'] != 0.0 and a['lon'] != 0.0]
 
-    # Filter out snoopers with invalid coordinates
-    snoopers = [
-        s for s in snoopers
-        if all(is_valid_lat_lon(d['lat'], d['lon']) for d in s['detections'])
-    ]
-    # Alerts will be handled even if they have invalid coordinates
+    logging.info(f"Total valid devices to map: {len(device_data)}")
+    logging.info(f"Total snoopers to map: {len(snoopers)}")
+    logging.info(f"Total alerts to map: {len(alerts)}")
 
-    if not device_data and not snoopers and not alerts:
-        logging.info("No valid devices, snoopers, or alerts with geolocation data to display.")
-        return
-
-    # Determine the center of the map
-    center_lat, center_lon = None, None
-
-    # Try to find the first valid GPS location from devices, snoopers, or alerts
-    all_locations = []
-
-    # Collect all valid locations
-    for d in device_data:
-        all_locations.append((d['lat'], d['lon'], d['last_time']))
-
-    for s in snoopers:
-        for d in s['detections']:
-            all_locations.append((d['lat'], d['lon'], d['last_time']))
-
-    for a in alerts:
-        if is_valid_lat_lon(a['lat'], a['lon']):
-            all_locations.append((float(a['lat']), float(a['lon']), a['time']))
-
-    if all_locations:
-        # Use the first valid location
-        all_locations.sort(key=lambda x: x[2] or 0)
-        center_lat, center_lon, _ = all_locations[0]
+    # Use the first valid device or alert location as the map center
+    if device_data:
+        center_lat = device_data[0]['lat']
+        center_lon = device_data[0]['lon']
+    elif alerts:
+        center_lat = alerts[0]['lat']
+        center_lon = alerts[0]['lon']
     else:
-        # Default to a predefined location if no valid GPS data is available
-        center_lat, center_lon = -80.56899, -30.08869  # Antarctica (Flying saucer coordinates)
-
-    # Initialize the Folium map
+        logging.warning("No valid coordinates to center the map. Using default location.")
+        center_lat, center_lon = 0.0, 0.0  # Default to Equator
+    
+    # Create the map
     device_map = folium.Map(location=(center_lat, center_lon), zoom_start=15, tiles="OpenStreetMap")
-    device_marker_cluster = MarkerCluster(name='Devices').add_to(device_map)
-    snooper_marker_cluster = MarkerCluster(name='Snoopers').add_to(device_map)
-    alert_marker_cluster = MarkerCluster(name='Alerts').add_to(device_map)
+    logging.info(f"Map centered at latitude {center_lat}, longitude {center_lon}.")
 
-    # Add device markers
+    # Add all devices to the map
     for device in device_data:
         mac = device['mac']
         lat = device['lat']
         lon = device['lon']
         name = device['name']
-        dev_type = device['device_type']
-        encryption = device['encryption']
-        last_seen = device['last_seen_time']
-        drone_detected = device['drone_detected']
-
-        # Get mapping details
-        mapping = DEVICE_TYPE_MAPPING.get(dev_type, DEVICE_TYPE_MAPPING['unknown'])
-        icon_color = mapping['color']
-        icon_symbol = mapping['icon']
-        popup_title = mapping['popup']
-
-        # Modify icon and popup if a drone is detected
-        if drone_detected:
-            icon_color = 'red'
-            icon_symbol = 'plane'  # Use a valid Font Awesome icon
-            popup_title = 'Drone Detected!'
-
-        # Customize the popup information
+        dev_type = device['dev_type']
+        type_info = device['type']
         popup_info = (
-            f"<b>{popup_title}</b><br>"
             f"MAC: {mac}<br>"
             f"Name/SSID: {name}<br>"
-            f"Encryption: {encryption}<br>"
+            f"Type/Encryption: {type_info}<br>"
             f"Device Type: {dev_type}<br>"
-            f"Location: {lat}, {lon}<br>"
-            f"Last Seen: {last_seen}"
+            f"Location: ({lat}, {lon})"
         )
 
-        # Log the icon assignment for debugging
-        logging.debug(f"Device {mac}: Type={dev_type}, Icon={icon_symbol}, Color={icon_color}")
-
-        # Add the marker to the device cluster
         folium.Marker(
             location=(lat, lon),
-            popup=folium.Popup(popup_info, parse_html=True, max_width=300),
-            icon=folium.Icon(color=icon_color, icon=icon_symbol, prefix='fa')
-        ).add_to(device_marker_cluster)
+            popup=folium.Popup(popup_info, parse_html=False, max_width=300),
+            icon=folium.Icon(color='blue', icon='signal', prefix='fa')
+        ).add_to(device_map)
+        logging.debug(f"Device marker added for {mac} at ({lat}, {lon}).")
 
-    # Add snooper markers and paths
+    # Highlight detected snoopers differently
     for snooper in snoopers:
+        if snooper['lat'] == 0.0 and snooper['lon'] == 0.0:
+            continue  # Skip devices with zero coordinates
         mac = snooper['mac']
-        detections = snooper['detections']
-        total_distance = snooper['total_distance']
+        lat = snooper['lat']
+        lon = snooper['lon']
+        name = snooper['name']
+        dev_type = snooper['dev_type']
+        type_info = snooper['type']
+        popup_info = (
+            f"<b>Snooper Detected!</b><br>"
+            f"MAC: {mac}<br>"
+            f"Name/SSID: {name}<br>"
+            f"Type/Encryption: {type_info}<br>"
+            f"Device Type: {dev_type}<br>"
+            f"Location: ({lat}, {lon})"
+        )
 
-        # Sort detections by time
-        detections = sorted(detections, key=lambda x: x['last_time'] or 0)
+        folium.Marker(
+            location=(lat, lon),
+            popup=folium.Popup(popup_info, parse_html=False, max_width=300),
+            icon=folium.Icon(color='red', icon='exclamation-triangle', prefix='fa')
+        ).add_to(device_map)
+        logging.debug(f"Snooper marker added for {mac} at ({lat}, {lon}).")
 
-        # Add markers for each detection
-        for i, detection in enumerate(detections):
-            lat = detection['lat']
-            lon = detection['lon']
-            last_seen = detection['last_seen_time']
-
-            popup_info = (
-                f"<b>Snooper</b><br>"
-                f"MAC: {mac}<br>"
-                f"Last Seen: {last_seen}<br>"
-                f"Total Movement: {total_distance:.2f} miles"
-            )
-
-            folium.CircleMarker(
-                location=(lat, lon),
-                radius=5,
-                color='orange',
-                fill=True,
-                fill_color='orange',
-                fill_opacity=0.7,
-                popup=folium.Popup(popup_info, parse_html=True, max_width=300)
-            ).add_to(snooper_marker_cluster)
-
-            # Draw lines between detections to show movement
-            if i > 0:
-                prev_detection = detections[i - 1]
-                prev_lat = prev_detection['lat']
-                prev_lon = prev_detection['lon']
-                folium.PolyLine(
-                    locations=[(prev_lat, prev_lon), (lat, lon)],
-                    color='orange',
-                    weight=2,
-                    opacity=0.6
-                ).add_to(device_map)
-
-    # Add alert markers
+    # Add alerts to the map
     for alert in alerts:
-        mac = alert['mac']
         lat = alert['lat']
         lon = alert['lon']
-        message = alert['message']
-        alert_type = alert.get('alert_type', 'Unknown')
-        alert_time = alert['time']
-        alert_time_str = alert['time_str']
-
-        # If lat/lon are invalid, place the alert near the first mapped device before the alert's timestamp
-        if not is_valid_lat_lon(lat, lon):
-            # Find the first device seen before the alert's timestamp
-            if alert_time and device_data:
-                devices_before_alert = [d for d in device_data if d['last_time'] and d['last_time'] <= alert_time.timestamp()]
-                if devices_before_alert:
-                    # Use the last device before the alert time
-                    reference_device = devices_before_alert[-1]
-                    lat = reference_device['lat'] + 0.0005  # Slight offset to avoid overlap
-                    lon = reference_device['lon'] + 0.0005
-                else:
-                    # No devices before the alert time; use the first device
-                    reference_device = device_data[0]
-                    lat = reference_device['lat'] + 0.0005
-                    lon = reference_device['lon'] + 0.0005
-            else:
-                # No devices or no alert time; place at the center
-                lat = center_lat
-                lon = center_lon
+        alert_key = alert['alert_key']
+        alert_text = alert['alert_text']
+        device_mac = alert['device_mac']
+        timestamp = alert['timestamp']
 
         popup_info = (
-            f"<b>Alert: {alert_type}</b><br>"
-            f"MAC: {mac}<br>"
-            f"Message: {message}<br>"
-            f"Time: {alert_time_str}"
+            f"<b>Wi-Fi Attack Alert!</b><br>"
+            f"Timestamp: {timestamp}<br>"
+            f"Alert Type: {alert_key}<br>"
+            f"Details: {alert_text}<br>"
+            f"Associated Device MAC: {device_mac}<br>"
+            f"Location: ({lat}, {lon})"
         )
-
-        # Log alert information for debugging
-        logging.debug(f"Alert from {mac}: {alert_type} - {message} at {alert_time_str}")
 
         folium.Marker(
             location=(lat, lon),
-            popup=folium.Popup(popup_info, parse_html=True, max_width=300),
-            icon=folium.Icon(color='black', icon='exclamation-triangle', prefix='fa')
-        ).add_to(alert_marker_cluster)
-
-    # Add layer control to toggle visibility
-    folium.LayerControl().add_to(device_map)
-
-    # Ensure the output directory exists
-    output_dir = os.path.dirname(output_map_file)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+            popup=folium.Popup(popup_info, parse_html=False, max_width=300),
+            icon=folium.Icon(color='orange', icon='bolt', prefix='fa')
+        ).add_to(device_map)
+        logging.debug(f"Alert marker added for {device_mac} at ({lat}, {lon}).")
 
     # Save the map to an HTML file
-    device_map.save(output_map_file)
-    logging.info(f"Map saved to {output_map_file}")
-
-# ===========================
-# Utility Functions
-# ===========================
-
-def find_most_recent_kismet_file(directory='.'):
-    """
-    Find the most recently modified .kismet file in the specified directory.
-
-    Parameters:
-        directory (str): Directory path to search for .kismet files.
-
-    Returns:
-        str or None: Path to the most recent .kismet file or None if none found.
-    """
-    kismet_files = glob.glob(os.path.join(directory, '*.kismet'))
-
-    if not kismet_files:
-        logging.error("No .kismet files found in the directory.")
-        return None
-
-    latest_file = max(kismet_files, key=os.path.getmtime)
-    return latest_file
+    try:
+        device_map.save(output_map_file)
+        logging.info(f"Map successfully saved to {output_map_file}")
+    except Exception as e:
+        logging.error(f"Failed to save the map: {e}")
 
 # ===========================
 # Main Execution Flow
 # ===========================
 
 def main():
-    # Parse command-line arguments
-    args = parse_arguments()
+    # Set up argument parsing
+    parser = argparse.ArgumentParser(description="Visualize Kismet Devices on a Folium Map with Snoopers Detection")
+    parser.add_argument(
+        '--db-path',
+        type=str,
+        help='Path to the Kismet SQLite database file (e.g., ./Kismet-YYYYMMDD-HH-MM-SS.kismet). If omitted, the script will attempt to find the most recent .kismet file in the current directory.'
+    )
+    parser.add_argument(
+        '--output-map',
+        type=str,
+        default="SnoopR_Map.html",
+        help='Filename for the output HTML map (default: SnoopR_Map.html)'
+    )
+    parser.add_argument(
+        '--distance-threshold',
+        type=float,
+        default=DISTANCE_THRESHOLD,
+        help=f'Distance threshold in miles to detect movement (default: {DISTANCE_THRESHOLD} miles)'
+    )
+    parser.add_argument(
+        '--time-threshold',
+        type=int,
+        default=TIME_THRESHOLD,
+        help=f'Time threshold in seconds to consider movement (default: {TIME_THRESHOLD} seconds)'
+    )
+    args = parser.parse_args()
+
+    # Initialize logging
+    setup_logging()
 
     # Determine which Kismet file to use
     if args.db_path:
@@ -679,47 +513,59 @@ def main():
         if not os.path.exists(kismet_file):
             logging.error(f"Specified database file '{kismet_file}' does not exist.")
             return
+        else:
+            logging.info(f"Using specified Kismet file: {kismet_file}")
     else:
         # Automatically find the most recent .kismet file
         kismet_file = find_most_recent_kismet_file()
         if not kismet_file:
             logging.error("No Kismet database file to process.")
             return
-
-    logging.info(f"Using Kismet file: {kismet_file}")
+        else:
+            logging.info(f"Using most recent Kismet file: {kismet_file}")
 
     # Extract device detections
-    device_detections = extract_device_detections(kismet_file)
-
-    if not device_detections:
+    device_data = extract_data_from_kismet(kismet_file)
+    if not device_data:
         logging.warning("No device data extracted.")
     else:
-        logging.info("Extracted Device Detections:")
-        for mac, detections in device_detections.items():
-            logging.info(f"Device {mac}: {len(detections)} detections")
+        logging.info(f"Extracted {len(device_data)} devices.")
+        # Optionally, print device data for inspection
+        # for device in device_data:
+        #     print(device)
 
     # Detect snoopers based on movement
-    movement_threshold = args.movement_threshold
-    snoopers = detect_snoopers(device_detections, movement_threshold)
+    snoopers = detect_snoopers(
+        device_data,
+        distance_threshold=args.distance_threshold,
+        time_threshold=args.time_threshold
+    )
     if snoopers:
-        logging.info("\nDetected Snoopers:")
+        logging.info(f"Detected {len(snoopers)} snoopers:")
         for snooper in snoopers:
-            logging.info(f"Snooper {snooper['mac']}: Moved {snooper['total_distance']:.2f} miles")
+            logging.info(f"Snooper MAC: {snooper['mac']}, Location: ({snooper['lat']}, {snooper['lon']}), Last Seen Time: {datetime.datetime.fromtimestamp(snooper['last_time']).strftime('%Y-%m-%d %H:%M:%S')}")
     else:
         logging.info("No snoopers detected.")
 
     # Extract alerts
     alerts = extract_alerts_from_kismet(kismet_file)
-    if alerts:
-        logging.info("\nExtracted Alerts:")
-        for alert in alerts:
-            logging.info(alert)
-    else:
+    if not alerts:
         logging.info("No alerts extracted.")
+    else:
+        logging.info(f"Extracted {len(alerts)} alerts.")
+        # Optionally, print alert data for inspection
+        # for alert in alerts:
+        #     print(alert)
 
-    # Visualize devices, snoopers, and alerts on the map
-    visualize_devices_snoopers_and_alerts(device_detections, snoopers, alerts, output_map_file=args.output_map)
+    # Visualize all devices, snoopers, and alerts on the map
+    visualize_devices_snoopers_and_alerts(
+        device_data=device_data,
+        snoopers=snoopers,
+        alerts=alerts,
+        output_map_file=args.output_map
+    )
+
+    logging.info("Script completed successfully.")
 
 if __name__ == "__main__":
     main()
-
