@@ -58,7 +58,76 @@
 
 SnoopR is a Python-based tool designed for network security professionals and enthusiasts. It detects Wi-Fi and Bluetooth devices captured by Kismet and also utilizes a GPS adapter to track device locations over time (known as "Snoopers"). The tool provides insights into the movement of these devices and maps Wi-Fi attacks logged by Kismet.
 Features:
+  
+  I'm excited to announce the launch of SnoopR live, the latest version of my device detection and mapping tool that now provides live updates while running alongside Kismet! 🎉
 
+🔍 Key Features:
+
+    Real-Time Monitoring: Visualize devices, snoopers, airplanes and alerts on an interactive map with live updates.
+    Auto-Refreshing Map: The map auto-refreshes to display the latest data without manual intervention.
+    Device Movement Detection: Detect potential snoopers based on device movement thresholds.
+    Drone Detection: Identify known drones by SSID or MAC address prefixes.
+    Customizable Update Intervals: Adjust how frequently the data refreshes to suit your needs.
+
+🌐 How It Works:
+
+SnoopR live processes data from the Kismet SQLite database in real-time and updates an interactive Folium map that you can view in your web browser. This setup enhances situational awareness by providing a visual representation of the devices detected in your vicinity.
+
+Usage Instructions:
+First run a virtual environment for each instance (Kismet, SnoopR and http.server)
+
+Run Kismet:
+        
+     sudo kismet
+
+
+Ensure that Kismet is running and capturing data.
+
+Run SnoopR.py:
+
+   
+
+     python3 SnoopR.py --db-path /path/to/your.kismet --output-map /path/to/map/SnoopR_Map.html --interval 30
+
+
+  Replace /path/to/your.kismet with the path to your Kismet database file.
+  Replace /path/to/map/SnoopR_Map.html with the desired output path for the map.
+  The --interval argument specifies how often (in seconds) the script updates the map. Adjust as needed.
+
+Start a Simple Web Server to Serve the Map:
+
+In the directory containing SnoopR_Map.html, start a web server:
+
+     python3 -m http.server 8000
+
+This will serve files in the directory over HTTP on port 8000.
+
+View the Map:
+
+Open your web browser and navigate to:
+
+     http://localhost:8000/SnoopR_Map.html
+
+The map will auto-refresh every 30 seconds (or the interval you set).
+You'll see live updates as Kismet collects new data.
+
+Dependencies:
+
+Ensure you have all required Python packages installed:
+
+
+
+        pip install folium
+
+
+Final Notes:
+
+    Be mindful of system resources when running the script continuously (dont reduce the auto refresh interval under 10 seconds!).
+    Adjust the update interval to balance between real-time updates and system performance.
+    Monitor the snoopr.log file for any errors or warnings during execution.
+
+
+    
  🚀 Exciting Snoopr Updates Are Here! 🕵️‍♂️✨
 
 We're thrilled to announce the latest enhancements to Snoopr, your go-to tool for comprehensive device monitoring and snooping detection. Check out what's new:
