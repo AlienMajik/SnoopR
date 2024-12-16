@@ -186,14 +186,12 @@ The following Python libraries are required to run SnoopR. They are listed in th
     pandas
     cbor2
     jinja2
-    sqlite3-binary  # Bundled with Python but listed for completeness.
     jsonschema
     argparse  # Native, included for completeness.
     logging  # Part of Python standard library.
-    math  # Built-in.
-    collections  # Used for defaultdict operations.
 
-    # Optional for SDR integration:
+
+# Optional for SDR integration:
     pyrtlsdr  # For RTL-SDR drone detection.
     numpy # Required for SDR operations.
     scipy # Optional for advanced signal processing.
